@@ -1,0 +1,48 @@
+CachedMethod
+============
+
+This plugin allows caching of the return value of instance methods on models. It is ment to be used for heavy tasks like statistics generation and the likes.
+
+To cache a method call the cache_method class method with the name of the method to be cached and set :expires_after.
+
+:expire_after defines the time after which the cache item becomes stale, meaning it will be updated on the next call to the method. Also it will be removed from the database if the cache:cleanup task is run.
+
+Installation
+============
+
+You will need a table for holding the caches. Until I get around to creating a migration generator you need to create it manually like this:
+
+class CreateCachedMethodItems < ActiveRecord::Migration
+  def self.up
+    create_table :cached_method_items do |t|
+      t.string :key
+      t.text :value
+      t.datetime :expires_at
+      t.timestamps
+    end
+    
+    add_index :cached_method_items, :key, :unique => true
+  end
+
+  def self.down
+    remove_index :cached_method_items, :key
+    drop_table :cached_method_items
+  end
+end
+
+
+Example
+=======
+
+class Account < ActiveRecord::Base
+
+  def some_heavy_operation(from, to)
+    ...
+  end
+
+  # This will expire the item in 1 month keeping it updated every hour
+  cache_method :some_heavy_operation, :expires_after => 1.month
+
+end
+
+Copyright (c) 2008 Circle R&D, all rights reserved
